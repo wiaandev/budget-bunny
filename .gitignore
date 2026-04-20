@@ -49,3 +49,6 @@ next-env.d.ts
 
 # eslint
 .eslintcache
+
+# MCP Servers
+mcp.json
