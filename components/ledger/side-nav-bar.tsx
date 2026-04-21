@@ -16,7 +16,7 @@ const links = [
   { href: "/protected/debts", label: "Debt & Snowball", icon: mdiBank },
   { href: "/protected/goals", label: "Goals & Emergency", icon: mdiFlag },
   { href: "/protected/transactions", label: "Transactions", icon: mdiCash },
-  { href: "/protected/setup", label: "New Budget & Collaborators", icon: mdiPlus },
+  { href: "/protected/setup", label: "New Budget Setup", icon: mdiPlus },
 ];
 
 const customLinks = [

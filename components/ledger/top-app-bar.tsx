@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ChevronDown, LogOut, UserCircle2 } from "lucide-react";
 import { useLedger } from "./ledger-provider";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +16,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { createClient } from "@/lib/supabase/client";
+import { AvatarImage, Avatar, AvatarFallback } from '../ui/avatar';
+import { User } from '@supabase/supabase-js';
 
 const links = [
   { href: "/protected", label: "Dashboard" },
@@ -40,16 +43,39 @@ function MoneyValue({ value }: { value: number }) {
 export function TopAppBar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { availableToAllocate, leftoverBalance, collaborators } = useLedger();
+  const { availableToAllocate, leftoverBalance } = useLedger();
+  const [user, setUser] = useState<User | null>(null);
+  useEffect(() => {
+    const supabase = createClient();
+    
+    // Get current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+      }
+    });
 
-  const profile = collaborators.find((c) => c.role === "Owner") ?? collaborators[0];
-  const initials = profile?.name
-    ? profile.name
-        .split(" ")
-        .slice(0, 2)
-        .map((part) => part[0]?.toUpperCase() ?? "")
-        .join("")
-    : "BB";
+    // Listen for auth changes (e.g., login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
+
+  const profileName = user?.user_metadata?.name || user?.email || "Budget Bunny User";
+  const profileEmail = user?.email || "profile@budgetbunny.app";
+  const initials = (user?.user_metadata?.name || user?.email || "BB")
+    .split(" ")
+    .slice(0, 2)
+    .map((part : any) => part[0]?.toUpperCase())
+    .join("");
 
   const logout = async () => {
     const supabase = createClient();
@@ -78,11 +104,16 @@ export function TopAppBar() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 rounded-full bg-white/80 px-2 py-1 pr-3 text-left hover:bg-white">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#edf2e8] text-xs font-semibold text-[#536346]">
-                  {initials}
-                </span>
+<Avatar>
+                    <AvatarImage
+                      src={user?.user_metadata?.avatar_url}
+                      alt="@shadcn"
+                      className="grayscale"
+                    />
+                    <AvatarFallback>CN</AvatarFallback>
+                  </Avatar>
                 <span className="hidden text-sm text-[#425037] md:inline">
-                  {profile?.name ?? "Profile"}
+                  {profileName}
                 </span>
                 <ChevronDown className="h-4 w-4 text-[#76806a]" />
               </button>
@@ -90,10 +121,17 @@ export function TopAppBar() {
             <DropdownMenuContent align="end" className="w-64 rounded-xl border-[#d8ddd1] bg-white p-2">
               <DropdownMenuLabel className="px-2 py-2">
                 <div className="flex items-start gap-2">
-                  <UserCircle2 className="mt-0.5 h-4 w-4 text-[#536346]" />
+                  <Avatar>
+                    <AvatarImage
+                      src={user?.user_metadata?.avatar_url}
+                      alt="@shadcn"
+                      className="grayscale"
+                    />
+                    <AvatarFallback>CN</AvatarFallback>
+                  </Avatar>
                   <div>
-                    <p className="text-sm font-semibold text-[#1a1c1c]">{profile?.name ?? "Budget Bunny User"}</p>
-                    <p className="text-xs text-[#5f6558]">{profile?.email ?? "profile@budgetbunny.app"}</p>
+                    <p className="text-sm font-semibold text-[#1a1c1c]">{profileName}</p>
+                    <p className="text-xs text-[#5f6558]">{profileEmail}</p>
                   </div>
                 </div>
               </DropdownMenuLabel>

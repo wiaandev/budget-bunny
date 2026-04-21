@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AddBudgetItemModal } from "@/components/ledger/add-budget-item-modal";
 import {
-  OwnerChip,
   Sparkline,
   formatCurrency,
 } from "@/components/ledger/ledger-primitives";
@@ -22,7 +21,6 @@ const bucketName = {
 export default function BudgetsPage() {
   const {
     incomeStreams,
-    collaborators,
     budgetItemsWithNet,
     ohCrapFund,
     whatIfRaisePct,
@@ -90,7 +88,6 @@ export default function BudgetsPage() {
         <h3 className="text-xl font-semibold tracking-[-0.01em] text-[#1a1c1c]">Budget Items</h3>
         <div className="mt-4 space-y-2">
           {budgetItemsWithNet.map((item) => {
-            const owner = collaborators.find((collaborator) => collaborator.id === item.ownerId);
             const isEditing = editingId === item.id;
             return (
               <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#f4f3f2] p-3">
@@ -128,7 +125,6 @@ export default function BudgetsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  {owner ? <OwnerChip name={owner.name} /> : null}
                   <div className="text-right">
                     <p className="text-sm tabular-nums text-[#5f6558]">Base {formatCurrency(item.amount)}</p>
                     <p className="text-sm font-semibold tabular-nums text-[#1a1c1c]">

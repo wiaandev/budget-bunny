@@ -12,7 +12,6 @@ import type {
   AddBudgetItemPayload,
   BudgetItem,
   Bucket,
-  Collaborator,
   Debt,
   Goal,
   IncomeStream,
@@ -22,7 +21,6 @@ type LedgerState = {
   incomeStreams: IncomeStream[];
   budgetItems: BudgetItem[];
   debts: Debt[];
-  collaborators: Collaborator[];
   goals: Goal[];
   ohCrapFund: number;
   whatIfRaisePct: number;
@@ -58,7 +56,6 @@ type LedgerContextValue = LedgerState & {
         | "bucket"
         | "entryType"
         | "recurring"
-        | "ownerId"
         | "debtId"
         | "linkedExpenseId"
         | "offsetAmount"
@@ -71,22 +68,11 @@ type LedgerContextValue = LedgerState & {
   updateIncomeStream: (streamId: string, amount: number) => void;
   updateOhCrapFund: (value: number) => void;
   updateWhatIfRaisePct: (value: number) => void;
-  inviteCollaborator: (name: string, email: string) => void;
   startFresh: () => void;
   reuseLastMonth: () => void;
 };
 
 const STORAGE_KEY = "budget-bunny-state-v1";
-
-const defaultCollaborators: Collaborator[] = [
-  { id: "owner-1", name: "You", email: "owner@budgetbunny.app", role: "Owner" },
-  {
-    id: "collab-1",
-    name: "Mia Carter",
-    email: "mia@example.com",
-    role: "Contributor",
-  },
-];
 
 const defaultDebts: Debt[] = [
   {
@@ -119,7 +105,6 @@ const defaultBudgetItems: BudgetItem[] = [
     entryType: "expense",
     recurring: true,
     paid: true,
-    ownerId: "owner-1",
     createdAt: new Date().toISOString(),
     paidAt: new Date().toISOString(),
   },
@@ -131,7 +116,6 @@ const defaultBudgetItems: BudgetItem[] = [
     entryType: "expense",
     recurring: true,
     paid: false,
-    ownerId: "collab-1",
     createdAt: new Date().toISOString(),
   },
   {
@@ -142,7 +126,6 @@ const defaultBudgetItems: BudgetItem[] = [
     entryType: "expense",
     recurring: true,
     paid: true,
-    ownerId: "owner-1",
     createdAt: new Date().toISOString(),
     paidAt: new Date().toISOString(),
   },
@@ -154,7 +137,6 @@ const defaultBudgetItems: BudgetItem[] = [
     entryType: "expense",
     recurring: true,
     paid: false,
-    ownerId: "owner-1",
     createdAt: new Date().toISOString(),
   },
   {
@@ -165,7 +147,6 @@ const defaultBudgetItems: BudgetItem[] = [
     entryType: "expense",
     recurring: true,
     paid: true,
-    ownerId: "owner-1",
     createdAt: new Date().toISOString(),
     paidAt: new Date().toISOString(),
   },
@@ -177,7 +158,6 @@ const defaultBudgetItems: BudgetItem[] = [
     entryType: "expense",
     recurring: false,
     paid: true,
-    ownerId: "owner-1",
     debtId: "debt-visa",
     createdAt: new Date().toISOString(),
     paidAt: new Date().toISOString(),
@@ -221,7 +201,6 @@ const defaultState: LedgerState = {
   incomeStreams: defaultIncome,
   budgetItems: defaultBudgetItems,
   debts: defaultDebts,
-  collaborators: defaultCollaborators,
   goals: defaultGoals,
   ohCrapFund: 300,
   whatIfRaisePct: 6,
@@ -401,7 +380,6 @@ export function LedgerProvider({ children }: { children: React.ReactNode }) {
           entryType: payload.entryType,
           recurring: payload.recurring,
           paid: false,
-          ownerId: payload.ownerId,
           debtId: payload.debtId,
           linkedExpenseId: payload.linkedExpenseId,
           offsetAmount: payload.offsetAmount,
@@ -424,7 +402,6 @@ export function LedgerProvider({ children }: { children: React.ReactNode }) {
           | "bucket"
           | "entryType"
           | "recurring"
-          | "ownerId"
           | "debtId"
           | "linkedExpenseId"
           | "offsetAmount"
@@ -491,21 +468,6 @@ export function LedgerProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  const inviteCollaborator = useCallback((name: string, email: string) => {
-    setState((prev) => ({
-      ...prev,
-      collaborators: [
-        ...prev.collaborators,
-        {
-          id: crypto.randomUUID(),
-          name,
-          email,
-          role: "Contributor",
-        },
-      ],
-    }));
-  }, []);
-
   const startFresh = useCallback(() => {
     setState((prev) => ({
       ...prev,
@@ -549,7 +511,6 @@ export function LedgerProvider({ children }: { children: React.ReactNode }) {
       updateIncomeStream,
       updateOhCrapFund,
       updateWhatIfRaisePct,
-      inviteCollaborator,
       startFresh,
       reuseLastMonth,
     }),
@@ -575,7 +536,6 @@ export function LedgerProvider({ children }: { children: React.ReactNode }) {
       updateIncomeStream,
       updateOhCrapFund,
       updateWhatIfRaisePct,
-      inviteCollaborator,
       startFresh,
       reuseLastMonth,
     ],

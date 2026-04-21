@@ -15,6 +15,10 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Seperator } from './ui/seperator';
+import Icon from '@mdi/react';
+import { mdiGoogle } from '@mdi/js';
+
 
 export function SignUpForm({
   className,
@@ -27,9 +31,9 @@ export function SignUpForm({
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  const supabase = createClient();
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const supabase = createClient();
     setIsLoading(true);
     setError(null);
 
@@ -55,6 +59,25 @@ export function SignUpForm({
       setIsLoading(false);
     }
   };
+
+  const handleGoogleSignUp = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=/protected/budgets`,
+        },
+      });
+
+      if (error) throw error;
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "An error occurred");
+      setIsLoading(false);
+    }
+  }
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -104,6 +127,11 @@ export function SignUpForm({
               {error && <p className="text-sm text-red-500">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Creating an account..." : "Sign up"}
+              </Button>
+              <div className="my-2 h-px bg-[#c5c8bd]/50" />
+              <Button type="button" className='w-full' variant={'outline'} onClick={handleGoogleSignUp} disabled={isLoading}>
+                <Icon path={mdiGoogle}/>
+                Sign up with Google
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">

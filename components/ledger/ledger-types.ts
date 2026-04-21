@@ -22,20 +22,12 @@ export type BudgetItem = {
   entryType: "expense" | "reimbursement";
   recurring: boolean;
   paid: boolean;
-  ownerId: string;
   debtId?: string;
   linkedExpenseId?: string;
   offsetAmount?: number;
   counterparty?: string;
   createdAt: string;
   paidAt?: string;
-};
-
-export type Collaborator = {
-  id: string;
-  name: string;
-  email: string;
-  role: "Owner" | "Contributor";
 };
 
 export type Goal = {
@@ -52,7 +44,6 @@ export type AddBudgetItemPayload = {
   bucket: Bucket;
   entryType: "expense" | "reimbursement";
   recurring: boolean;
-  ownerId: string;
   debtId?: string;
   linkedExpenseId?: string;
   offsetAmount?: number;

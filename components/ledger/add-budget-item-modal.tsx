@@ -15,8 +15,7 @@ const bucketOptions: Array<{ value: Bucket; label: string }> = [
 ];
 
 export function AddBudgetItemModal() {
-  const { addBudgetItem, collaborators, debtProgress, budgetItemsWithNet } =
-    useLedger();
+  const { addBudgetItem, debtProgress, budgetItemsWithNet } = useLedger();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
@@ -24,7 +23,6 @@ export function AddBudgetItemModal() {
     "expense",
   );
   const [bucket, setBucket] = useState<Bucket>("needs");
-  const [ownerId, setOwnerId] = useState(collaborators[0]?.id ?? "");
   const [debtId, setDebtId] = useState("");
   const [counterparty, setCounterparty] = useState("");
   const [linkedExpenseId, setLinkedExpenseId] = useState("");
@@ -192,22 +190,6 @@ export function AddBudgetItemModal() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="budget-item-owner">Owner</Label>
-                <select
-                  id="budget-item-owner"
-                  value={ownerId}
-                  onChange={(event) => setOwnerId(event.target.value)}
-                  className="h-10 w-full rounded-xl border-0 bg-[#f4f3f2] px-3 text-sm"
-                >
-                  {collaborators.map((collaborator) => (
-                    <option key={collaborator.id} value={collaborator.id}>
-                      {collaborator.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="budget-item-debt">Linked Debt (Optional)</Label>
                 <select
                   id="budget-item-debt"
@@ -257,7 +239,6 @@ export function AddBudgetItemModal() {
                     bucket,
                     entryType,
                     recurring,
-                    ownerId,
                     debtId: debtId || undefined,
                     linkedExpenseId: linkedExpenseId || undefined,
                     offsetAmount: offsetAmount ? Number(offsetAmount) : undefined,
