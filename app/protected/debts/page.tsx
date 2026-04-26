@@ -3,6 +3,7 @@
 import { useLedger } from "@/components/ledger/ledger-provider";
 import { AddBudgetItemModal } from "@/components/ledger/add-budget-item-modal";
 import { formatCurrency } from "@/components/ledger/ledger-primitives";
+import { AddDebtItemModal } from '@/components/ledger/add-debt-item-modal';
 
 function interestSeverity(rate: number) {
   if (rate >= 15) return "text-[#ba1a1a] bg-[#ffdad6]";
@@ -25,7 +26,7 @@ export default function DebtSnowballPage() {
           <h2 className="text-4xl font-semibold tracking-[-0.02em] text-[#1a1c1c]">Debt & Snowball Tracker</h2>
           <p className="mt-2 text-sm text-[#5f6558]">Payments marked paid in the budget immediately reduce debt principal here.</p>
         </div>
-        <AddBudgetItemModal />
+        <AddDebtItemModal />
       </header>
 
       <div className="grid gap-4 md:grid-cols-3">

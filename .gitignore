@@ -52,3 +52,6 @@ next-env.d.ts
 
 # MCP Servers
 mcp.json
+
+# supabase temp files
+/lib/supabase/.temp

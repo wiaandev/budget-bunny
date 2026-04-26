@@ -8,6 +8,7 @@ import { mdiBank, mdiCash, mdiChartPieOutline, mdiFlag, mdiPill, mdiPlus, mdiVie
 
 const links = [
   { href: "/protected", label: "Dashboard", icon: mdiViewDashboardOutline },
+  { href: "/protected/setup", label: "New Budget Setup", icon: mdiPlus },
   {
     href: "/protected/budgets",
     label: "Monthly Budget Planner",
@@ -16,7 +17,6 @@ const links = [
   { href: "/protected/debts", label: "Debt & Snowball", icon: mdiBank },
   { href: "/protected/goals", label: "Goals & Emergency", icon: mdiFlag },
   { href: "/protected/transactions", label: "Transactions", icon: mdiCash },
-  { href: "/protected/setup", label: "New Budget Setup", icon: mdiPlus },
 ];
 
 const customLinks = [
