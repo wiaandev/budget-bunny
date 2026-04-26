@@ -49,3 +49,9 @@ next-env.d.ts
 
 # eslint
 .eslintcache
+
+# MCP Servers
+mcp.json
+
+# supabase temp files
+/lib/supabase/.temp

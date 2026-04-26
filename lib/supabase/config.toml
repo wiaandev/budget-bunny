@@ -1,0 +1,5 @@
+[auth.external.google]
+enabled = true
+client_id = "224237982583-taobt36d8tu9932alfr11gi4m5qu35fj.apps.googleusercontent.com"
+secret = "env(NEXT_GOOGLE_OAUTH_CLIENT_SECRET)"
+skip_nonce_check = false
