@@ -1,12 +1,12 @@
 "use client";
 
-import { AddBudgetItemModal } from "@/components/ledger/add-budget-item-modal";
+import { AddBudgetItemModal } from "@/components/modal/add-budget-item-modal";
 import {
   BucketProgress,
   StatCard,
   formatCurrency,
-} from "@/components/ledger/ledger-primitives";
-import { useLedger } from "@/components/ledger/ledger-provider";
+} from "@/components/ledger-primitives";
+import { useLedger } from "@/components/ledger-provider";
 
 const bucketTitles = {
   needs: "Needs 50%",

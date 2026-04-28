@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useLedger } from "@/components/ledger/ledger-provider";
-import { formatCurrency } from "@/components/ledger/ledger-primitives";
+import { useLedger } from "@/components/ledger-provider";
+import { formatCurrency } from "@/components/ledger-primitives";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/app/types/supabase";
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
+import AddGoalItemModal from '@/components/modal/add-goal-item-modal';
 
 type GoalRow = Database["public"]["Tables"]["goals"]["Row"];
 
@@ -24,8 +28,8 @@ export default function GoalsPage() {
 
       const { data, error } = await supabase
         .from("goals")
-        .select("*");
-        // .order("created_at", { ascending: false });
+        .select("*")
+        .order("created_at", { ascending: false });
 
         console.log(data);
 
@@ -54,9 +58,12 @@ export default function GoalsPage() {
 
   return (
     <section className="space-y-6">
-      <header>
-        <h2 className="text-4xl font-semibold tracking-[-0.02em] text-[#1a1c1c]">Goals & Emergency Fund</h2>
-      </header>
+      <div className='flex justify-between'>
+        <header>
+          <h2 className="text-4xl font-semibold tracking-[-0.02em] text-[#1a1c1c]">Goals & Emergency Fund</h2>
+        </header>
+        <AddGoalItemModal/>
+      </div>
 
       {emergency ? (
         <article className="rounded-3xl bg-[#edf2e8] p-6">
@@ -75,10 +82,10 @@ export default function GoalsPage() {
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
-        {isLoadingGoals ? <p className="text-sm text-[#5f6558]">Loading goals...</p> : null}
+        {isLoadingGoals ? <Spinner /> : null}
         {goalsError ? <p className="text-sm text-red-600">Unable to load goals: {goalsError}</p> : null}
         {!isLoadingGoals && !goalsError && dbGoals.length === 0 ? (
-          <p className="text-sm text-[#5f6558]">No goals found in Supabase yet.</p>
+          <p className="text-sm text-[#5f6558]">No goals added yet.</p>
         ) : null}
 
         {dbGoals.map((goal) => {

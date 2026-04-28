@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { createClient } from "@/lib/supabase/client";
-import { AvatarImage, Avatar, AvatarFallback } from '../ui/avatar';
+import { AvatarImage, Avatar, AvatarFallback } from './ui/avatar';
 import { User } from '@supabase/supabase-js';
 
 const links = [

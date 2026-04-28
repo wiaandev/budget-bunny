@@ -1,9 +1,9 @@
 "use client";
 
-import { useLedger } from "@/components/ledger/ledger-provider";
-import { AddBudgetItemModal } from "@/components/ledger/add-budget-item-modal";
-import { formatCurrency } from "@/components/ledger/ledger-primitives";
-import { AddDebtItemModal } from '@/components/ledger/add-debt-item-modal';
+import { useLedger } from "@/components/ledger-provider";
+import { AddBudgetItemModal } from "@/components/modal/add-budget-item-modal";
+import { formatCurrency } from "@/components/ledger-primitives";
+import { AddDebtItemModal } from '@/components/modal/add-debt-item-modal';
 
 function interestSeverity(rate: number) {
   if (rate >= 15) return "text-[#ba1a1a] bg-[#ffdad6]";

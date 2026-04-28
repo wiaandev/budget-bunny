@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { useLedger } from "@/components/ledger/ledger-provider";
-import { formatCurrency } from "@/components/ledger/ledger-primitives";
+import { useLedger } from "@/components/ledger-provider";
+import { formatCurrency } from "@/components/ledger-primitives";
 
 const bucketLabel = {
   needs: "Needs",

@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useLedger } from "./ledger-provider";
-import type { Bucket } from "./ledger-types";
+import { useLedger } from "../ledger-provider";
+import type { Bucket } from "../ledger-types";
 
 const bucketOptions: Array<{ value: Bucket; label: string }> = [
   { value: "needs", label: "Needs (50%)" },

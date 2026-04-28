@@ -4,12 +4,12 @@ import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AddBudgetItemModal } from "@/components/ledger/add-budget-item-modal";
+import { AddBudgetItemModal } from "@/components/modal/add-budget-item-modal";
 import {
   Sparkline,
   formatCurrency,
-} from "@/components/ledger/ledger-primitives";
-import { useLedger } from "@/components/ledger/ledger-provider";
+} from "@/components/ledger-primitives";
+import { useLedger } from "@/components/ledger-provider";
 
 const bucketName = {
   needs: "Needs",

@@ -1,7 +1,7 @@
 "use client";
 
-import { useLedger } from "@/components/ledger/ledger-provider";
-import { formatCurrency } from "@/components/ledger/ledger-primitives";
+import { useLedger } from "@/components/ledger-provider";
+import { formatCurrency } from "@/components/ledger-primitives";
 
 export default function MedicineCabinetPage() {
   const { goals } = useLedger();
