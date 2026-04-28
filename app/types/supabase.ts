@@ -52,6 +52,7 @@ export type Database = {
           is_recurring: boolean | null
           name: string
           offset_item_id: string | null
+          paid: boolean | null
           type: string | null
         }
         Insert: {
@@ -66,6 +67,7 @@ export type Database = {
           is_recurring?: boolean | null
           name: string
           offset_item_id?: string | null
+          paid?: boolean | null
           type?: string | null
         }
         Update: {
@@ -80,6 +82,7 @@ export type Database = {
           is_recurring?: boolean | null
           name?: string
           offset_item_id?: string | null
+          paid?: boolean | null
           type?: string | null
         }
         Relationships: [

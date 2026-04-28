@@ -4,7 +4,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "generate-types": "npx supabase gen types typescript --linked > app/types/supabase.ts"
   },
   "dependencies": {
     "@mdi/js": "^7.4.47",

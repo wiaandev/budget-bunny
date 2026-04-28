@@ -1,58 +1,202 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
+import { useForm, type SubmitHandler } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useLedger } from "../ledger-provider";
-import type { Bucket } from "../ledger-types";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import { createClient } from "@/lib/supabase/client";
+import type { Database } from "@/app/types/supabase";
+
+type Bucket = "need" | "investment" | "want" | "emergency";
+type BudgetItemInsert = Database["public"]["Tables"]["budget_items"]["Insert"];
+type BudgetItemRow = Database["public"]["Tables"]["budget_items"]["Row"];
+type DebtItemRow = Database["public"]["Tables"]["debt_items"]["Row"];
+
 
 const bucketOptions: Array<{ value: Bucket; label: string }> = [
-  { value: "needs", label: "Needs (50%)" },
-  { value: "investments", label: "Investments (20%)" },
-  { value: "wants", label: "Wants (15%)" },
+  { value: "need", label: "Needs (50%)" },
+  { value: "investment", label: "Investments (20%)" },
+  { value: "want", label: "Wants (15%)" },
   { value: "emergency", label: "Emergency (15%)" },
 ];
 
-export function AddBudgetItemModal() {
-  const { addBudgetItem, debtProgress, budgetItemsWithNet } = useLedger();
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [amount, setAmount] = useState("");
-  const [entryType, setEntryType] = useState<"expense" | "reimbursement">(
-    "expense",
-  );
-  const [bucket, setBucket] = useState<Bucket>("needs");
-  const [debtId, setDebtId] = useState("");
-  const [counterparty, setCounterparty] = useState("");
-  const [linkedExpenseId, setLinkedExpenseId] = useState("");
-  const [offsetAmount, setOffsetAmount] = useState("");
-  const [recurring, setRecurring] = useState(false);
+type FormValues = {
+  name: string;
+  amount: number;
+  entryType: "expense" | "reimbursement";
+  bucket: Bucket;
+  debtId: string;
+  counterparty: string;
+  linkedExpenseId: string;
+  offsetAmount: string;
+  recurring: boolean;
+};
 
-  const expenseOptions = budgetItemsWithNet.filter(
-    (item) => item.entryType === "expense",
-  );
+export function AddBudgetItemModal() {
+  const supabase = useMemo(() => createClient(), []);
+  const params = useParams<{ id?: string }>();
+  const budgetId = params.id ?? null;
+
+  const [open, setOpen] = useState(false);
+  const [expenseOptions, setExpenseOptions] = useState<BudgetItemRow[]>([]);
+  const [debtOptions, setDebtOptions] = useState<DebtItemRow[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { errors, isValid },
+  } = useForm<FormValues>({
+    mode: "onChange",
+    defaultValues: {
+      name: "",
+      amount: 0,
+      entryType: "expense",
+      bucket: "need",
+      debtId: "",
+      counterparty: "",
+      linkedExpenseId: "",
+      offsetAmount: "",
+      recurring: false,
+    },
+  });
+
+  const entryType = watch("entryType");
+  const amount = watch("amount");
+  const linkedExpenseId = watch("linkedExpenseId");
+  const offsetAmount = watch("offsetAmount");
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadOptions() {
+      setLoadError(null);
+
+      const expenseQuery = supabase
+        .from("budget_items")
+        .select("*")
+        .eq("type", "expense")
+        .order("created_at", { ascending: false });
+
+      const debtQuery = supabase
+        .from("debt_items")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      const [expenseResult, debtResult] = budgetId
+        ? await Promise.all([
+            expenseQuery.eq("budget_id", budgetId),
+            debtQuery.eq("budget_id", budgetId),
+          ])
+        : await Promise.all([expenseQuery, debtQuery]);
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (expenseResult.error || debtResult.error) {
+        setLoadError(expenseResult.error?.message ?? debtResult.error?.message ?? "Unable to load options");
+        setExpenseOptions([]);
+        setDebtOptions([]);
+        return;
+      }
+
+      setExpenseOptions(expenseResult.data ?? []);
+      setDebtOptions(debtResult.data ?? []);
+    }
+
+    void loadOptions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [open, budgetId, supabase]);
+
+  useEffect(() => {
+    if (entryType !== "expense") {
+      if (linkedExpenseId) {
+        setValue("linkedExpenseId", "", { shouldValidate: true });
+      }
+      if (offsetAmount) {
+        setValue("offsetAmount", "", { shouldValidate: true });
+      }
+      return;
+    }
+
+    if (!linkedExpenseId) {
+      if (offsetAmount) {
+        setValue("offsetAmount", "", { shouldValidate: true });
+      }
+      return;
+    }
+
+    const linked = expenseOptions.find((item) => item.id === linkedExpenseId);
+    const nextOffsetAmount = String(linked?.amount ?? 0);
+
+    if (offsetAmount !== nextOffsetAmount) {
+      setValue("offsetAmount", nextOffsetAmount, { shouldValidate: true });
+    }
+  }, [entryType, linkedExpenseId, offsetAmount, expenseOptions, setValue]);
 
   const netPreview =
     entryType === "expense"
-      ? Number(amount || 0) - Number(offsetAmount || 0)
-      : -Number(amount || 0);
+      ? (Number.isFinite(amount) ? amount : 0) - Number(offsetAmount || 0)
+      : -(Number.isFinite(amount) ? amount : 0);
 
-  const canSubmit = useMemo(
-    () => name.trim().length > 1 && Number(amount) > 0,
-    [amount, name],
-  );
+  const canSubmit = useMemo(() => isValid, [isValid]);
 
-  const reset = () => {
-    setName("");
-    setAmount("");
-    setEntryType("expense");
-    setBucket("needs");
-    setDebtId("");
-    setCounterparty("");
-    setLinkedExpenseId("");
-    setOffsetAmount("");
-    setRecurring(false);
+  const closeAndReset = () => {
+    setOpen(false);
+    setSubmitError(null);
+    reset();
+  };
+
+  const onSubmit: SubmitHandler<FormValues> = async (formData) => {
+    setSubmitError(null);
+    setIsSaving(true);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const payload: BudgetItemInsert = {
+      name: formData.name.trim(),
+      amount: formData.amount,
+      budget_id: budgetId,
+      category: formData.bucket,
+      counterparty: formData.counterparty.trim() || null,
+      created_by: user?.id ?? null,
+      debt_id: formData.debtId || null,
+      is_recurring: formData.recurring,
+      offset_item_id: formData.linkedExpenseId || null,
+      type: formData.entryType,
+    };
+
+    console.log(payload);
+
+    const { error } = await supabase.from("budget_items").insert(payload);
+
+    console.error(error);
+
+    if (error) {
+      setSubmitError(error.message);
+      setIsSaving(false);
+      return;
+    }
+
+    setIsSaving(false);
+    closeAndReset();
   };
 
   return (
@@ -69,84 +213,88 @@ export function AddBudgetItemModal() {
               <h3 className="text-2xl font-semibold tracking-[-0.02em] text-[#1a1c1c]">Add Budget Item</h3>
             </div>
 
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="budget-item-name">Name</Label>
+            {loadError ? <p className="mb-3 text-sm text-red-600">Unable to load form options: {loadError}</p> : null}
+
+            <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+              <Field className="space-y-2">
+                <FieldLabel htmlFor="budget-item-name">Name</FieldLabel>
                 <Input
                   id="budget-item-name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
+                  aria-invalid={Boolean(errors.name)}
                   placeholder="Medical Aid"
                   className="rounded-xl border-0 bg-[#f4f3f2]"
+                  {...register("name", {
+                    required: "Name is required",
+                    minLength: {
+                      value: 2,
+                      message: "Name must be at least 2 characters",
+                    },
+                  })}
                 />
-              </div>
+                <FieldError errors={[errors.name]} />
+              </Field>
 
-              <div className="space-y-2">
-                <Label>Type</Label>
+              <Field className="space-y-2">
+                <FieldLabel>Type</FieldLabel>
+                <input type="hidden" {...register("entryType", { required: "Type is required" })} />
                 <div className="grid grid-cols-2 gap-2 rounded-xl bg-[#f4f3f2] p-1">
                   <button
                     type="button"
-                    onClick={() => setEntryType("expense")}
+                    onClick={() => setValue("entryType", "expense", { shouldValidate: true })}
                     className={`rounded-lg px-3 py-2 text-sm ${entryType === "expense" ? "bg-white text-[#1a1c1c]" : "text-[#5f6558]"}`}
                   >
                     Expense
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setEntryType("reimbursement");
-                      setLinkedExpenseId("");
-                      setOffsetAmount("");
-                    }}
+                    onClick={() => setValue("entryType", "reimbursement", { shouldValidate: true })}
                     className={`rounded-lg px-3 py-2 text-sm ${entryType === "reimbursement" ? "bg-white text-[#1a1c1c]" : "text-[#5f6558]"}`}
                   >
                     Reimbursement
                   </button>
                 </div>
-              </div>
+                <FieldError errors={[errors.entryType]} />
+              </Field>
 
-              <div className="space-y-2">
-                <Label htmlFor="budget-item-amount">Amount</Label>
+              <Field className="space-y-2">
+                <FieldLabel htmlFor="budget-item-amount">Amount</FieldLabel>
                 <Input
                   id="budget-item-amount"
                   type="number"
                   min={0}
-                  value={amount}
-                  onChange={(event) => setAmount(event.target.value)}
+                  aria-invalid={Boolean(errors.amount)}
                   placeholder="0"
                   className="rounded-xl border-0 bg-[#f4f3f2]"
+                  {...register("amount", {
+                    required: "Amount is required",
+                    valueAsNumber: true,
+                    min: {
+                      value: 1,
+                      message: "Amount must be greater than 0",
+                    },
+                  })}
                 />
-              </div>
+                <FieldError errors={[errors.amount]} />
+              </Field>
 
               {entryType === "expense" ? (
                 <>
-                  <div className="space-y-2">
-                    <Label htmlFor="budget-item-counterparty">Counterparty (Optional)</Label>
+                  <Field className="space-y-2">
+                    <FieldLabel htmlFor="budget-item-counterparty">Counterparty (Optional)</FieldLabel>
                     <Input
                       id="budget-item-counterparty"
-                      value={counterparty}
-                      onChange={(event) => setCounterparty(event.target.value)}
                       placeholder="Jane"
                       className="rounded-xl border-0 bg-[#f4f3f2]"
+                      {...register("counterparty")}
                     />
-                  </div>
+                  </Field>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="budget-item-linked-expense">Link To Existing Expense (Offset)</Label>
+                  <Field className="space-y-2">
+                    <FieldLabel htmlFor="budget-item-linked-expense">Link To Existing Expense (Offset)</FieldLabel>
                     <select
                       id="budget-item-linked-expense"
-                      value={linkedExpenseId}
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        setLinkedExpenseId(value);
-                        if (!value) {
-                          setOffsetAmount("");
-                          return;
-                        }
-                        const linked = expenseOptions.find((item) => item.id === value);
-                        setOffsetAmount(String(linked?.amount ?? 0));
-                      }}
                       className="h-10 w-full rounded-xl border-0 bg-[#f4f3f2] px-3 text-sm"
+                      {...register("linkedExpenseId")}
                     >
                       <option value="">No linked expense</option>
                       {expenseOptions.map((item) => (
@@ -155,31 +303,43 @@ export function AddBudgetItemModal() {
                         </option>
                       ))}
                     </select>
-                  </div>
+                  </Field>
 
                   {linkedExpenseId ? (
-                    <div className="space-y-2">
-                      <Label htmlFor="budget-item-offset">Offset Amount</Label>
+                    <Field className="space-y-2">
+                      <FieldLabel htmlFor="budget-item-offset">Offset Amount</FieldLabel>
                       <Input
                         id="budget-item-offset"
                         type="number"
                         min={0}
-                        value={offsetAmount}
-                        onChange={(event) => setOffsetAmount(event.target.value)}
+                        aria-invalid={Boolean(errors.offsetAmount)}
                         className="rounded-xl border-0 bg-[#f4f3f2]"
+                        {...register("offsetAmount", {
+                          validate: (value) => {
+                            if (!linkedExpenseId) return true;
+                            if (!value) return "Offset amount is required when linked";
+
+                            const numericOffset = Number(value);
+                            if (Number.isNaN(numericOffset) || numericOffset < 0) {
+                              return "Offset amount must be 0 or greater";
+                            }
+
+                            return true;
+                          },
+                        })}
                       />
-                    </div>
+                      <FieldError errors={[errors.offsetAmount]} />
+                    </Field>
                   ) : null}
                 </>
               ) : null}
 
-              <div className="space-y-2">
-                <Label htmlFor="budget-item-bucket">Category</Label>
+              <Field className="space-y-2">
+                <FieldLabel htmlFor="budget-item-bucket">Category</FieldLabel>
                 <select
                   id="budget-item-bucket"
-                  value={bucket}
-                  onChange={(event) => setBucket(event.target.value as Bucket)}
                   className="h-10 w-full rounded-xl border-0 bg-[#f4f3f2] px-3 text-sm"
+                  {...register("bucket", { required: "Category is required" })}
                 >
                   {bucketOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -187,71 +347,55 @@ export function AddBudgetItemModal() {
                     </option>
                   ))}
                 </select>
-              </div>
+                <FieldError errors={[errors.bucket]} />
+              </Field>
 
-              <div className="space-y-2">
-                <Label htmlFor="budget-item-debt">Linked Debt (Optional)</Label>
+              <Field className="space-y-2">
+                <FieldLabel htmlFor="budget-item-debt">Linked Debt (Optional)</FieldLabel>
                 <select
                   id="budget-item-debt"
-                  value={debtId}
-                  onChange={(event) => setDebtId(event.target.value)}
                   className="h-10 w-full rounded-xl border-0 bg-[#f4f3f2] px-3 text-sm"
+                  {...register("debtId")}
                 >
                   <option value="">Not debt related</option>
-                  {debtProgress.map((debt) => (
+                  {debtOptions.map((debt) => (
                     <option key={debt.id} value={debt.id}>
                       {debt.name}
                     </option>
                   ))}
                 </select>
-              </div>
+              </Field>
 
-              <label className="flex items-center gap-3 text-sm text-[#5f6558]">
-                <input
-                  type="checkbox"
-                  checked={recurring}
-                  onChange={(event) => setRecurring(event.target.checked)}
-                  className="h-4 w-4 rounded border-[#c5c8bd]"
-                />
-                Recurring item
-              </label>
-            </div>
+              <Field className="space-y-2">
+                <label className="flex items-center gap-3 text-sm text-[#5f6558]">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-[#c5c8bd]"
+                    {...register("recurring")}
+                  />
+                  Recurring item
+                </label>
+              </Field>
 
-            <div className="mt-6 flex items-center justify-end gap-2">
-              <p className="mr-auto text-xs text-[#5f6558]">
+              <FieldDescription className="text-xs">
                 Net {netPreview >= 0 ? "expense" : "credit"}: {Math.abs(netPreview).toFixed(2)}
-              </p>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setOpen(false);
-                  reset();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                disabled={!canSubmit}
-                onClick={() => {
-                  addBudgetItem({
-                    name: name.trim(),
-                    amount: Number(amount),
-                    bucket,
-                    entryType,
-                    recurring,
-                    debtId: debtId || undefined,
-                    linkedExpenseId: linkedExpenseId || undefined,
-                    offsetAmount: offsetAmount ? Number(offsetAmount) : undefined,
-                    counterparty: counterparty.trim() || undefined,
-                  });
-                  setOpen(false);
-                  reset();
-                }}
-                className="rounded-full bg-[#536346] text-white hover:bg-[#445537]"
-              >
-                Save Item
-              </Button>
-            </div>
+              </FieldDescription>
+
+              {submitError ? <p className="text-sm text-red-600">Unable to save item: {submitError}</p> : null}
+
+              <div className="mt-6 flex items-center justify-end gap-2">
+                <Button variant="ghost" type="button" onClick={closeAndReset}>
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={!canSubmit || isSaving}
+                  className="rounded-full bg-[#536346] text-white hover:bg-[#445537]"
+                >
+                  {isSaving ? "Saving..." : "Save Item"}
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       ) : null}
